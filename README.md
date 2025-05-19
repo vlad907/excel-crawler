@@ -15,7 +15,6 @@
 
    ```bash
    python read-file.py
-   python crawl.py
    ```
 
 ## Notes
