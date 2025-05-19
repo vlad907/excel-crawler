@@ -9,9 +9,9 @@
    source venv/bin/activate  # On Windows use: venv\Scripts\activate
    ```
 
-2. **Run the script sequence**:
+2. **Run the script**:
 
-   You must first run `read-file.py`, which reads names from the Excel file and prepares them for the crawler. Then, run `crawl.py` to perform the image search and download.
+   You must first run `read-file.py`, which reads names from the Excel file and prepares them for the crawler.
 
    ```bash
    python read-file.py
