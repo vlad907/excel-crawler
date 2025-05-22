@@ -1,43 +1,86 @@
-import openpyxl
+import json
 import crawl
-def list_sheet_names(filepath):
-    wb = openpyxl.load_workbook(filepath, read_only=True)
-    return wb.sheetnames
 
+import os
+import subprocess
 
 if __name__ == "__main__":
-    import os
+    print("Choose an option:")
+    print("1. Crawl new JSON file(s)")
+    print("2. Rerun crawl for directories with missing/deleted images")
 
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    excel_files = []
-    for dirpath, _, filenames in os.walk(root_dir):
-        for f in filenames:
-            if f.endswith('.xlsx'):
-                full_path = os.path.join(dirpath, f)
-                excel_files.append(full_path)
+    mode = input("Enter 1 or 2: ").strip()
 
-    if not excel_files:
-        print("No Excel (.xlsx) files found in the current directory.")
+    if mode == "1":
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        json_dir = os.path.join(root_dir, "json")
+
+        if not os.path.isdir(json_dir):
+            print("No 'json' directory found.")
+        else:
+            json_files = [f for f in os.listdir(json_dir) if f.endswith(".json")]
+            if not json_files:
+                print("No JSON files found.")
+                exit()
+
+            print("Available JSON files:")
+            for i, fname in enumerate(json_files, 1):
+                print(f"{i}. {fname}")
+            print("0. Run all")
+
+            selection = input("Enter the number(s) of the JSON file(s) to read (e.g., 2 or 1-3 or 0 to run all): ").strip()
+            if selection == "0":
+                selected_files = json_files
+            elif "-" in selection:
+                start, end = map(int, selection.split("-"))
+                selected_files = json_files[start-1:end]
+            else:
+                idx = int(selection)
+                selected_files = [json_files[idx - 1]]
+
+            num_images = input("How many images do you want to download per file? ").strip()
+
+            for filename in selected_files:
+                file_path = os.path.join(json_dir, filename)
+                print(f"Running crawl for: {filename}")
+                try:
+                    subprocess.run(["python", "crawl.py", file_path, num_images])
+                except Exception as e:
+                    print(f"Error running crawl.py for {filename}: {e}")
+
+    elif mode == "2":
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        json_dir = os.path.join(root_dir, "json")
+
+        if not os.path.isdir(json_dir):
+            print("No 'json' directory found.")
+            exit()
+        json_files = [f for f in os.listdir(json_dir) if f.endswith(".json")]
+        if not json_files:
+            print("No JSON files found.")
+            exit()
+
+        print("Available JSON files:")
+        for i, fname in enumerate(json_files, 1):
+            print(f"{i}. {fname}")
+        print("0. Run all")
+
+        selection = input("Enter the number(s) of the JSON file(s) to rerun (e.g., 2 or 1-3 or 0 to run all): ").strip()
+        if selection == "0":
+            selected_files = json_files
+        elif "-" in selection:
+            start, end = map(int, selection.split("-"))
+            selected_files = json_files[start-1:end]
+        else:
+            idx = int(selection)
+            selected_files = [json_files[idx - 1]]
+
+        for filename in selected_files:
+            file_path = os.path.join(json_dir, filename)
+            print(f"Rerunning crawl for: {filename}")
+            try:
+                subprocess.run(["python", "rerun-crawl.py", file_path])
+            except Exception as e:
+                print(f"Error rerunning rerun-crawl.py for {filename}: {e}")
     else:
-        print("Available Excel files:")
-        for i, file in enumerate(excel_files, 1):
-            print(f"{i}. {file}")
-        
-        choice = input("Enter the number of the Excel file to read: ")
-
-        try:
-            selected_file = excel_files[int(choice) - 1]
-            sheet_names = list_sheet_names(selected_file)
-            print("Sheet names:")
-            for name in sheet_names:
-                print(f"- {name}")
-            
-            # Load workbook and read column B2 to B317
-            wb = openpyxl.load_workbook(selected_file, read_only=True)
-            ws = wb.active  # Use the first sheet by default
-            cell_values = [ws[f"B{i}"].value for i in range(2, 318) if ws[f"B{i}"].value]
-
-            import subprocess
-            subprocess.run(["python", "crawl.py"] + cell_values)
-        except (IndexError, ValueError):
-            print("Invalid selection.")
+        print("Invalid selection.")
